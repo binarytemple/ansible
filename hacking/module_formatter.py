@@ -117,7 +117,7 @@ def write_data(text, options, outputname, module):
 def list_modules(module_dir):
     ''' returns a hash of categories, each category being a hash of module names to file paths '''
 
-    categories = {}
+    categories = dict(all=dict())
     files = glob.glob("%s/*" % module_dir)
     for d in files:
         if os.path.isdir(d):
@@ -129,6 +129,7 @@ def list_modules(module_dir):
                 if not category in categories:
                     categories[category] = {}
                 categories[category][module] = f
+                categories['all'][module] = f
     return categories
 
 #####################################################################################
@@ -145,7 +146,7 @@ def generate_parser():
     p.add_option("-A", "--ansible-version", action="store", dest="ansible_version", default="unknown", help="Ansible version number")
     p.add_option("-M", "--module-dir", action="store", dest="module_dir", default=MODULEDIR, help="Ansible library path")
     p.add_option("-T", "--template-dir", action="store", dest="template_dir", default="hacking/templates", help="directory containing Jinja2 templates")
-    p.add_option("-t", "--type", action='store', dest='type', choices=['html', 'latex', 'man', 'rst', 'json', 'markdown', 'js'], default='latex', help="Document type")
+    p.add_option("-t", "--type", action='store', dest='type', choices=['rst'], default='rst', help="Document type")
     p.add_option("-v", "--verbose", action='store_true', default=False, help="Verbose")
     p.add_option("-o", "--output-dir", action="store", dest="output_dir", default=None, help="Output directory for module files")
     p.add_option("-I", "--includes-file", action="store", dest="includes_file", default=None, help="Create a file containing list of processed modules")
@@ -184,7 +185,7 @@ def process_module(module, options, env, template, outputname, module_map):
     fname = module_map[module]
 
     # ignore files with extensions
-    if os.path.basename(fname).find(".") != -1:
+    if "." in os.path.basename(fname):
         return
 
     # use ansible core library to parse out doc metadata YAML and plaintext examples

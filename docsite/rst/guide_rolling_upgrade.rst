@@ -75,7 +75,7 @@ as push updates to all of the servers::
       - base-apache
       - nagios
 
-.. note:
+.. note::
 
    If you're not familiar with terms like playbooks and plays, you should review :doc:`playbooks`.
 
@@ -172,7 +172,7 @@ Here's another example, from the same template::
    {% endfor %}
 
 This loops over all of the hosts in the group called ``monitoring``, and adds an ACCEPT line for 
-each monitoring hosts's default IPV4 address to the current machine's iptables configuration, so that Nagios can monitor those hosts.
+each monitoring hosts' default IPV4 address to the current machine's iptables configuration, so that Nagios can monitor those hosts.
 
 You can learn a lot more about Jinja2 and its capabilities `here <http://jinja.pocoo.org/docs/>`_, and you 
 can read more about Ansible variables in general in the :doc:`playbooks_variables` section.
@@ -184,7 +184,7 @@ The Rolling Upgrade
 
 Now you have a fully-deployed site with web servers, a load balancer, and monitoring. How do you update it? This is where Ansible's 
 orchestration features come into play. While some applications use the term 'orchestration' to mean basic ordering or command-blasting, Ansible
-referes to orchestration as 'conducting machines like an orchestra', and has a pretty sophisticated engine for it.  
+refers to orchestration as 'conducting machines like an orchestra', and has a pretty sophisticated engine for it.
 
 Ansible has the capability to do operations on multi-tier applications in a coordinated way, making it easy to orchestrate a sophisticated zero-downtime rolling upgrade of our web application. This is implemented in a separate playbook, called ``rolling_upgrade.yml``.
 
@@ -201,7 +201,7 @@ The next part is the update play. The first part looks like this::
      user: root
      serial: 1
 
-This is just a normal play definition, operating on the ``webservers`` group. The ``serial`` keyword tells Ansible how many servers to operate on at once. If it's not specified, Ansible will paralleize these operations up to the default "forks" limit specified in the configuration file. But for a zero-downtime rolling upgrade, you may not want to operate on that many hosts at once. If you had just a handful of webservers, you may want to set ``serial`` to 1, for one host at a time. If you have 100, maybe you could set ``serial`` to 10, for ten at a time.
+This is just a normal play definition, operating on the ``webservers`` group. The ``serial`` keyword tells Ansible how many servers to operate on at once. If it's not specified, Ansible will parallelize these operations up to the default "forks" limit specified in the configuration file. But for a zero-downtime rolling upgrade, you may not want to operate on that many hosts at once. If you had just a handful of webservers, you may want to set ``serial`` to 1, for one host at a time. If you have 100, maybe you could set ``serial`` to 10, for ten at a time.
 
 Here is the next part of the update play::
 
@@ -262,11 +262,9 @@ Now that you have an automated way to deploy updates to your application, how do
 
 Depending on your environment, you might be deploying continuously to a test environment, running an integration test battery against that environment, and then deploying automatically into production.  Or you could keep it simple and just use the rolling-update for on-demand deployment into test or production specifically.  This is all up to you.
 
-For integration with Continuous Integration systems, you can easily trigger playbook runs using the ``ansible-playbook`` command line tool, or, if you're using AnsibleWorks AWX, the ``awx-cli`` or the built-in REST API.  (The AWX-cli command 'joblaunch' will spawn a remote job over the REST API and is pretty slick).
+For integration with Continuous Integration systems, you can easily trigger playbook runs using the ``ansible-playbook`` command line tool, or, if you're using :doc:`tower`, the ``tower-cli`` or the built-in REST API.  (The tower-cli command 'joblaunch' will spawn a remote job over the REST API and is pretty slick).
 
 This should give you a good idea of how to structure a multi-tier application with Ansible, and orchestrate operations upon that app, with the eventual goal of continuous delivery to your customers. You could extend the idea of the rolling upgrade to lots of different parts of the app; maybe add front-end web servers along with application servers, for instance, or replace the SQL database with something like MongoDB or Riak. Ansible gives you the capability to easily manage complicated environments and automate common operations.
-
-If you need help or if you have questions, stop by the mailing list or the IRC channel, or email us at info@ansibleworks.com.
 
 .. seealso::
 
@@ -278,7 +276,7 @@ If you need help or if you have questions, stop by the mailing list or the IRC c
        An introduction to playbook roles
    :doc:`playbooks_variables`
        An introduction to Ansible variables
-   `AnsibleWorks: Continuous Delivery <http://www.ansibleworks.com/continuous-delivery/>`_
+   `Ansible.com: Continuous Delivery <http://www.ansible.com/ansible-continuous-delivery>`_
        An introduction to Continuous Delivery with Ansible
 
 

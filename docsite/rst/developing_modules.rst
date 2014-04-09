@@ -91,7 +91,7 @@ The example usage we are trying to achieve to set the time is::
 
 If no time parameter is set, we'll just leave the time as is and return the current time.
 
-.. note:
+.. note::
    This is obviously an unrealistic idea for a module.  You'd most likely just
    use the shell module.  However, it probably makes a decent tutorial.
 
@@ -123,7 +123,7 @@ a lot shorter than this::
     for arg in arguments:
 
         # ignore any arguments without an equals in it
-        if arg.find("=") != -1:
+        if "=" in arg:
 
             (key, value) = arg.split("=")
 
@@ -415,23 +415,6 @@ Building & Testing
 Put your completed module file into the 'library' directory and then
 run the command: ``make webdocs``. The new 'modules.html' file will be
 built and appear in the 'docsite/' directory.
-
-You can also test-build your docs one-by-one using the
-``module_formatter.py`` script:
-
-.. code-block:: bash
-
-   $ ./hacking/module_formatter.py -t man -M library/ -m git > ansible-git.1
-   $ man ./ansible-git.1
-
-This will build a manpage for the git module, and look in the
-'library/' directory for the module source. To see all the other
-output formats available:
-
-.. code-block:: bash
-
-   $ ./hacking/module_formatter.py -t --help
-
 
 .. tip::
 
