@@ -25,8 +25,9 @@ import optparse
 import operator
 from ansible import errors
 from ansible import __version__
-from ansible.utils.plugins import *
 from ansible.utils import template
+from ansible.utils.display_functions import *
+from ansible.utils.plugins import *
 from ansible.callbacks import display
 import ansible.constants as C
 import ast
@@ -42,17 +43,12 @@ import warnings
 import traceback
 import getpass
 import sys
-import textwrap
 import json
 
 #import vault
 from vault import VaultLib
 
 VERBOSITY=0
-
-# list of all deprecation messages to prevent duplicate display
-deprecations = {}
-warns = {}
 
 MAX_FILE_SIZE_FOR_DIFF=1*1024*1024
 
@@ -75,9 +71,28 @@ except:
 
 KEYCZAR_AVAILABLE=False
 try:
-    import keyczar.errors as key_errors
-    from keyczar.keys import AesKey
-    KEYCZAR_AVAILABLE=True
+    try:
+        # some versions of pycrypto may not have this?
+        from Crypto.pct_warnings import PowmInsecureWarning
+    except ImportError:
+        PowmInsecureWarning = RuntimeWarning
+
+    with warnings.catch_warnings(record=True) as warning_handler:
+        warnings.simplefilter("error", PowmInsecureWarning)
+        try:
+            import keyczar.errors as key_errors
+            from keyczar.keys import AesKey
+        except PowmInsecureWarning:
+            system_warning(
+                "The version of gmp you have installed has a known issue regarding " + \
+                "timing vulnerabilities when used with pycrypto. " + \
+                "If possible, you should update it (ie. yum update gmp)."
+            )
+            warnings.resetwarnings()
+            warnings.simplefilter("ignore")
+            import keyczar.errors as key_errors
+            from keyczar.keys import AesKey
+        KEYCZAR_AVAILABLE=True
 except ImportError:
     pass
 
@@ -486,7 +501,6 @@ Note: The error may actually appear before this position: line %s, column %s
                 if '"{{' not in probline or "'{{" not in probline:
                     unquoted_var = True
 
-            msg = process_common_errors(msg, probline, mark.column)
             if not unquoted_var:
                 msg = process_common_errors(msg, probline, mark.column)
             else:
@@ -504,7 +518,6 @@ Should be written as:
       - "{{ foo }}"      
 
 """
-                msg = process_common_errors(msg, probline, mark.column)
         else:
             # most likely displaying a file with sensitive content,
             # so don't show any of the actual lines of yaml just the
@@ -595,9 +608,9 @@ def md5s(data):
     return digest.hexdigest()
 
 def md5(filename):
-    ''' Return MD5 hex digest of local file, or None if file is not present. '''
+    ''' Return MD5 hex digest of local file, None if file is not present or a directory. '''
 
-    if not os.path.exists(filename):
+    if not os.path.exists(filename) or os.path.isdir(filename):
         return None
     digest = _md5()
     blocksize = 64 * 1024
@@ -937,9 +950,9 @@ def make_su_cmd(su_user, executable, cmd):
     """
     # TODO: work on this function
     randbits = ''.join(chr(random.randint(ord('a'), ord('z'))) for x in xrange(32))
-    prompt = 'assword: '
+    prompt = '[Pp]assword: ?$'
     success_key = 'SUDO-SUCCESS-%s' % randbits
-    sudocmd = '%s %s %s %s -c %s' % (
+    sudocmd = '%s %s %s -c "%s -c %s"' % (
         C.DEFAULT_SU_EXE, C.DEFAULT_SU_FLAGS, su_user, executable or '$SHELL',
         pipes.quote('echo %s; %s' % (success_key, cmd))
     )
@@ -989,6 +1002,23 @@ def is_list_of_strings(items):
         if not isinstance(x, basestring):
             return False
     return True
+
+def list_union(a, b):
+    result = []
+    for x in a:
+        if x not in result:
+            result.append(x)
+    for x in b:
+        if x not in result:
+            result.append(x)
+    return result
+
+def list_intersection(a, b):
+    result = []
+    for x in a:
+        if x in b and x not in result:
+            result.append(x)
+    return result
 
 def safe_eval(expr, locals={}, include_exceptions=False):
     '''
@@ -1112,36 +1142,6 @@ def listify_lookup_plugin_terms(terms, basedir, inject):
             terms = [ terms ]
 
     return terms
-
-def deprecated(msg, version, removed=False):
-    ''' used to print out a deprecation message.'''
-
-    if not removed and not C.DEPRECATION_WARNINGS:
-        return
-
-    if not removed:
-        if version:
-            new_msg = "\n[DEPRECATION WARNING]: %s. This feature will be removed in version %s." % (msg, version)
-        else:
-            new_msg = "\n[DEPRECATION WARNING]: %s. This feature will be removed in a future release." % (msg)
-        new_msg = new_msg + " Deprecation warnings can be disabled by setting deprecation_warnings=False in ansible.cfg.\n\n"
-    else:
-        raise errors.AnsibleError("[DEPRECATED]: %s.  Please update your playbooks." % msg)
-
-    wrapped = textwrap.wrap(new_msg, 79)
-    new_msg = "\n".join(wrapped) + "\n"
-
-    if new_msg not in deprecations:
-        display(new_msg, color='purple', stderr=True)
-        deprecations[new_msg] = 1
-
-def warning(msg):
-    new_msg = "\n[WARNING]: %s" % msg
-    wrapped = textwrap.wrap(new_msg, 79)
-    new_msg = "\n".join(wrapped) + "\n"
-    if new_msg not in warns:
-        display(new_msg, color='bright purple', stderr=True)
-        warns[new_msg] = 1
 
 def combine_vars(a, b):
 

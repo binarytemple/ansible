@@ -496,7 +496,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
     # Change Memory
     if vm_hardware['memory_mb']:
 
-        if vm_hardware['memory_mb'] != vm.properties.config.hardware.memoryMB:
+        if int(vm_hardware['memory_mb']) != vm.properties.config.hardware.memoryMB:
             spec = spec_singleton(spec, request, vm)
 
             if vm.is_powered_on():
@@ -504,7 +504,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
                     # No hot add but force
                     if not memoryHotAddEnabled:
                         shutdown = True
-                    elif vm_hardware['memory_mb'] < vm.properties.config.hardware.memoryMB:
+                    elif int(vm_hardware['memory_mb']) < vm.properties.config.hardware.memoryMB:
                         shutdown = True
                 else:
                     # Fail on no hot add and no force
@@ -514,7 +514,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
                             "required for shutdown")
 
                     # Fail on no force and memory shrink
-                    elif vm_hardware['memory_mb'] < vm.properties.config.hardware.memoryMB:
+                    elif int(vm_hardware['memory_mb']) < vm.properties.config.hardware.memoryMB:
                         module.fail_json(
                             msg="Cannot lower memory on a live VM. force is "
                             "required for shutdown")
@@ -525,7 +525,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
 
     # ====( Config Memory )====#
     if vm_hardware['num_cpus']:
-        if vm_hardware['num_cpus'] != vm.properties.config.hardware.numCPU:
+        if int(vm_hardware['num_cpus']) != vm.properties.config.hardware.numCPU:
             spec = spec_singleton(spec, request, vm)
 
             if vm.is_powered_on():
@@ -533,7 +533,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
                     # No hot add but force
                     if not cpuHotAddEnabled:
                         shutdown = True
-                    elif vm_hardware['num_cpus'] < vm.properties.config.hardware.numCPU:
+                    elif int(vm_hardware['num_cpus']) < vm.properties.config.hardware.numCPU:
                         if not cpuHotRemoveEnabled:
                             shutdown = True
                 else:
@@ -544,7 +544,7 @@ def reconfigure_vm(vsphere_client, vm, module, esxi, resource_pool, cluster_name
                             "required for shutdown")
 
                     # Fail on no force and cpu shrink without hot remove
-                    elif vm_hardware['num_cpus'] < vm.properties.config.hardware.numCPU:
+                    elif int(vm_hardware['num_cpus']) < vm.properties.config.hardware.numCPU:
                         if not cpuHotRemoveEnabled:
                             module.fail_json(
                                 msg="Cannot lower CPU on a live VM without "
@@ -725,14 +725,12 @@ def create_vm(vsphere_client, module, esxi, resource_pool, cluster_name, guest, 
                     msg="Error on %s definition. datastore needs to be"
                     " specified." % disk)
             try:
-                disksize = vm_disk[disk]['size_gb']
+                disksize = int(vm_disk[disk]['size_gb'])
                 # Convert the disk size to kiloboytes
                 disksize = disksize * 1024 * 1024
-            except KeyError:
+            except (KeyError, ValueError):
                 vsphere_client.disconnect()
-                module.fail_json(
-                    msg="Error on %s definition. size needs to be"
-                    " specified." % disk)
+                module.fail_json(msg="Error on %s definition. size needs to be specified as an integer." % disk)
             try:
                 disktype = vm_disk[disk]['type']
             except KeyError:
@@ -976,7 +974,15 @@ class DefaultVMConfig(object):
                     for k, v in value.items():
                         if k in self.check_dict[key]:
                             if not isinstance(self.check_dict[key][k], v):
-                                self.recursive_missing.append((k, v))
+                                try:
+                                    if v == int:
+                                        self.check_dict[key][k] = int(self.check_dict[key][k])
+                                    elif v == basestring:
+                                        self.check_dict[key][k] = str(self.check_dict[key][k])
+                                    else:
+                                        raise ValueError
+                                except ValueError:
+                                    self.recursive_missing.append((k, v))
                         else:
                             self.recursive_missing.append((k, v))
 
