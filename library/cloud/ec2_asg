@@ -120,7 +120,8 @@ except ImportError:
     sys.exit(1)
 
 ASG_ATTRIBUTES = ('launch_config_name', 'max_size', 'min_size', 'desired_capacity',
-                     'vpc_zone_identifier', 'availability_zones')
+                     'vpc_zone_identifier', 'availability_zones',
+                     'health_check_period', 'health_check_type')
 
 def enforce_required_arguments(module):
     ''' As many arguments are not required for autoscale group deletion
@@ -209,6 +210,8 @@ def create_autoscaling_group(connection, module):
             existing_tags = as_group.tags
             existing_tag_map = dict((tag.key, tag) for tag in existing_tags)
             for tag in set_tags:
+                if 'key' not in tag:
+                    continue
                 if ( not tag['key'] in existing_tag_map or
                      existing_tag_map[tag['key']].value != tag['value'] or
                      ('propagate_at_launch' in tag and
@@ -289,7 +292,7 @@ def main():
             state=dict(default='present', choices=['present', 'absent']),
             tags=dict(type='list', default=[]),
             health_check_period=dict(type='int', default=300),
-            health_check_type=dict(default='EC2', chices=['EC2', 'ELB']),
+            health_check_type=dict(default='EC2', choices=['EC2', 'ELB']),
         )
     )
     module = AnsibleModule(argument_spec=argument_spec)

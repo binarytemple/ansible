@@ -173,7 +173,7 @@ The variable value will be used as is, but the template evaluation will raise an
 Defaulting Undefined Variables
 ------------------------------
 
-Jinja2 provides a useful 'default' filter, that is often a better approach to failing if a variable is not defined.
+Jinja2 provides a useful 'default' filter, that is often a better approach to failing if a variable is not defined::
 
     {{ some_variable | default(5) }}
 
@@ -1029,7 +1029,7 @@ can set variables in there and make use of them in other roles and elsewhere in 
         - { role: something_else }
 
 .. note:: There are some protections in place to avoid the need to namespace variables.  
-          In the above, variables defined in common_settings are most definitely available to 'app_user' and 'something_else' tasks, but if
+          In the above, variables defined in common_settings are most definitely available to 'something' and 'something_else' tasks, but if
           "something's" guaranteed to have foo set at 12, even if somewhere deep in common settings it set foo to 20.
 
 So, that's precedence, explained in a more direct way.  Don't worry about precedence, just think about if your role is defining a
